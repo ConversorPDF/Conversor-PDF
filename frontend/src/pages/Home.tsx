@@ -5,6 +5,7 @@ import {
   HardDrive,
   Images,
   Layers,
+  Minimize2,
   Scissors,
   ShieldCheck,
   Trash,
@@ -23,9 +24,9 @@ const TOOLS: ToolConfig[] = [
     titleKey: "w2p",
     descKey: "w2pDesc",
     accept: ".docx,.doc,.odt,.rtf",
-    multiple: false,
+    multiple: true,
     minFiles: 1,
-    field: "file",
+    field: "files",
   },
   {
     id: "pdf-to-word",
@@ -68,6 +69,26 @@ const TOOLS: ToolConfig[] = [
     minFiles: 1,
     field: "files",
   },
+  {
+    id: "compress-pdf",
+    endpoint: "/tools/compress-pdf",
+    titleKey: "compress",
+    descKey: "compressDesc",
+    accept: ".pdf",
+    multiple: false,
+    minFiles: 1,
+    field: "file",
+    select: {
+      field: "level",
+      labelKey: "levelLabel",
+      default: "recomendada",
+      options: [
+        { value: "ligera", labelKey: "levelLigera" },
+        { value: "recomendada", labelKey: "levelRecomendada" },
+        { value: "maxima", labelKey: "levelMaxima" },
+      ],
+    },
+  },
 ];
 
 const ICONS: Record<string, typeof FileText> = {
@@ -76,6 +97,7 @@ const ICONS: Record<string, typeof FileText> = {
   "merge-pdf": Layers,
   "split-pdf": Scissors,
   "images-to-pdf": Images,
+  "compress-pdf": Minimize2,
 };
 
 export default function Home() {

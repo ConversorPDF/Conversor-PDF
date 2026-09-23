@@ -5,10 +5,24 @@ import { ArrowLeft, FileUp, Loader2, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ApiError, apiUploadFile, downloadBlob } from "@/lib/api";
 import type { Lang } from "@/lib/i18n";
 import { translator } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+
+export interface SelectSpec {
+  field: string;
+  labelKey: string;
+  default: string;
+  options: { value: string; labelKey: string }[];
+}
 
 export interface ToolConfig {
   id: string;
@@ -20,6 +34,7 @@ export interface ToolConfig {
   minFiles: number;
   field: "file" | "files";
   ranges?: boolean;
+  select?: SelectSpec;
 }
 
 const MAX_BYTES = 100 * 1024 * 1024;
@@ -40,6 +55,7 @@ export default function ToolPanel({ tool, lang, onBack }: Props) {
   const t = translator(lang);
   const [files, setFiles] = useState<File[]>([]);
   const [ranges, setRanges] = useState("");
+  const [selectValue, setSelectValue] = useState(tool.select?.default ?? "");
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<"idle" | "uploading" | "working">("idle");
@@ -76,6 +92,7 @@ export default function ToolPanel({ tool, lang, onBack }: Props) {
     if (tool.field === "file") form.append("file", files[0]);
     else files.forEach((f) => form.append("files", f));
     if (tool.ranges) form.append("ranges", ranges);
+    if (tool.select) form.append(tool.select.field, selectValue);
 
     setPhase("uploading");
     setProgress(0);
@@ -87,7 +104,15 @@ export default function ToolPanel({ tool, lang, onBack }: Props) {
       setPhase("idle");
       setProgress(100);
       downloadBlob(result);
-      toast.success(t("done"));
+      if (result.reductionPercent !== undefined) {
+        toast.success(
+          result.reductionPercent > 0
+            ? t("reduction").replace("{n}", String(result.reductionPercent))
+            : t("noReduction"),
+        );
+      } else {
+        toast.success(t("done"));
+      }
       setFiles([]);
       setRanges("");
       if (inputRef.current) inputRef.current.value = "";
@@ -212,6 +237,37 @@ export default function ToolPanel({ tool, lang, onBack }: Props) {
             data-testid="tool-ranges-input"
           />
           <p className="mt-1.5 text-xs text-muted-foreground">{t("rangesHint")}</p>
+        </div>
+      )}
+
+      {tool.select && (
+        <div className="mt-5 max-w-md">
+          <Label htmlFor="level-select">{t(tool.select.labelKey)}</Label>
+          <Select value={selectValue} onValueChange={setSelectValue}>
+            <SelectTrigger
+              id="level-select"
+              className="mt-1.5 w-full"
+              data-testid="tool-select-trigger"
+            >
+              <SelectValue>
+                {(v) => {
+                  const opt = tool.select?.options.find((o) => o.value === (v as string));
+                  return opt ? t(opt.labelKey) : "";
+                }}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {tool.select.options.map((opt) => (
+                <SelectItem
+                  key={opt.value}
+                  value={opt.value}
+                  data-testid={`tool-select-option-${opt.value}`}
+                >
+                  {t(opt.labelKey)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 

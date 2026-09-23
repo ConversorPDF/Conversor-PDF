@@ -48,6 +48,7 @@ export const apiDelete = <T>(path: string) => request<T>("DELETE", path);
 export interface FileResult {
   blob: Blob;
   filename: string;
+  reductionPercent?: number;
 }
 
 // Multipart upload returning a binary file, with upload-progress reporting (XHR: fetch
@@ -87,7 +88,12 @@ export function apiUploadFile(
       }
       const disposition = xhr.getResponseHeader("Content-Disposition") ?? "";
       const match = /filename="?([^";]+)"?/.exec(disposition);
-      resolve({ blob, filename: match ? match[1] : "resultado" });
+      const reductionRaw = xhr.getResponseHeader("X-Reduction-Percent");
+      resolve({
+        blob,
+        filename: match ? match[1] : "resultado",
+        reductionPercent: reductionRaw === null ? undefined : Number(reductionRaw),
+      });
     };
 
     xhr.send(form);

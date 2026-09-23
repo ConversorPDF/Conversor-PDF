@@ -44,12 +44,15 @@ async def _save(upload: UploadFile, dest: Path) -> Path:
     return dest
 
 
-def _respond(path: Path, workdir: str, media_type: str) -> FileResponse:
+def _respond(path: Path, workdir: str, media_type: str, extra_headers: dict | None = None) -> FileResponse:
+    headers = {"Content-Disposition": f'attachment; filename="{path.name}"'}
+    if extra_headers:
+        headers.update(extra_headers)
     return FileResponse(
         path,
         media_type=media_type,
         filename=path.name,
-        headers={"Content-Disposition": f'attachment; filename="{path.name}"'},
+        headers=headers,
         background=BackgroundTask(_cleanup, workdir),  # temp files deleted after the response
     )
 
@@ -69,19 +72,90 @@ def _soffice(src: Path, outdir: Path) -> Path:
 
 
 @router.post("/word-to-pdf")
-async def word_to_pdf(file: UploadFile = File(...)):
-    _check_ext(file, (".docx", ".doc", ".odt", ".rtf"))
+async def word_to_pdf(files: List[UploadFile] = File(...)):
+    if not files:
+        raise HTTPException(status_code=400, detail="Selecciona al menos un archivo")
+    for f in files:
+        _check_ext(f, (".docx", ".doc", ".odt", ".rtf"))
     workdir = tempfile.mkdtemp(prefix="w2p_")
     try:
-        src = await _save(file, Path(workdir) / Path(file.filename or "documento.docx").name)
-        out = await asyncio.to_thread(_soffice, src, Path(workdir))
+        pdfs: list[Path] = []
+        for i, f in enumerate(files):
+            sub = Path(workdir) / f"src_{i}"
+            sub.mkdir()
+            src = await _save(f, sub / Path(f.filename or f"documento_{i}.docx").name)
+            out = await asyncio.to_thread(_soffice, src, sub)
+            final = Path(workdir) / (Path(f.filename or f"documento_{i}").stem + ".pdf")
+            shutil.move(str(out), str(final))
+            pdfs.append(final)
+        if len(pdfs) == 1:
+            return _respond(pdfs[0], workdir, "application/pdf")
+        zip_path = Path(workdir) / "documentos-pdf.zip"
+        used: dict[str, int] = {}
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for p in pdfs:
+                arc = p.name
+                if arc in used:
+                    used[arc] += 1
+                    arc = f"{p.stem}_{used[p.name]}.pdf"
+                else:
+                    used[arc] = 0
+                zf.write(p, arc)
     except HTTPException:
         _cleanup(workdir)
         raise
     except Exception as exc:  # noqa: BLE001
         _cleanup(workdir)
         raise HTTPException(status_code=500, detail=f"Error al convertir: {exc}") from exc
-    return _respond(out, workdir, "application/pdf")
+    return _respond(zip_path, workdir, "application/zip")
+
+
+_GS_QUALITY = {"ligera": "/printer", "recomendada": "/ebook", "maxima": "/screen"}
+
+
+@router.post("/compress-pdf")
+async def compress_pdf(file: UploadFile = File(...), level: str = Form("recomendada")):
+    _check_ext(file, (".pdf",))
+    quality = _GS_QUALITY.get(level, "/ebook")
+    workdir = tempfile.mkdtemp(prefix="comp_")
+    try:
+        src = await _save(file, Path(workdir) / "entrada.pdf")
+        original = src.stat().st_size
+        out = Path(workdir) / (Path(file.filename or "documento").stem + "_comprimido.pdf")
+
+        def _gs():
+            subprocess.run(
+                [
+                    "gs", "-sDEVICE=pdfwrite", "-dCompatibilityLevel=1.4",
+                    f"-dPDFSETTINGS={quality}", "-dNOPAUSE", "-dQUIET", "-dBATCH",
+                    "-dDetectDuplicateImages=true", f"-sOutputFile={out}", str(src),
+                ],
+                check=True, capture_output=True, timeout=300,
+            )
+
+        await asyncio.to_thread(_gs)
+        if not out.exists() or out.stat().st_size == 0:
+            raise HTTPException(status_code=500, detail="La compresión no produjo un PDF")
+        compressed = out.stat().st_size
+        # If Ghostscript enlarged the file (already-optimised PDF), return the original instead.
+        if compressed >= original:
+            shutil.copyfile(src, out)
+            compressed = original
+        reduction = 0 if original == 0 else round((1 - compressed / original) * 100)
+    except HTTPException:
+        _cleanup(workdir)
+        raise
+    except Exception as exc:  # noqa: BLE001
+        _cleanup(workdir)
+        raise HTTPException(status_code=500, detail=f"Error al comprimir: {exc}") from exc
+    return _respond(
+        out, workdir, "application/pdf",
+        extra_headers={
+            "X-Original-Size": str(original),
+            "X-Compressed-Size": str(compressed),
+            "X-Reduction-Percent": str(reduction),
+        },
+    )
 
 
 def _pdf_to_docx(src: Path, out: Path):
