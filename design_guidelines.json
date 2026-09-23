@@ -1,0 +1,246 @@
+{
+  "theme_strategy": {
+    "default_mode": "light",
+    "support_dark_mode": true,
+    "archetype": "ARCHETYPE 4: SWISS & HIGH-CONTRAST + ARCHETYPE 1: ORGANIC UTILITY (Document Studio Precision)",
+    "rationale": "An internal document utility tool (iLovePDF clone for local corporate network) demands utmost operational clarity, high contrast, crisp typography, and zero distraction. A refined light theme with deep charcoal anchors, warm stone undertones, vibrant Swiss cinnabar/crimson accent (#E11D48 / #E63946) for PDF/action cues, and emerald/cyan for success and document formats."
+  },
+  "typography": {
+    "heading_font": "@fontsource-variable/plus-jakarta-sans",
+    "body_font": "@fontsource-variable/dm-sans",
+    "mono_font": "@fontsource-variable/jetbrains-mono",
+    "font_family_names": {
+      "heading": "'Plus Jakarta Sans Variable', sans-serif",
+      "body": "'DM Sans Variable', sans-serif",
+      "mono": "'JetBrains Mono Variable', monospace"
+    },
+    "scale_px": {
+      "display": 56,
+      "h1": 44,
+      "h2": 32,
+      "h3": 22,
+      "h4": 18,
+      "body": 15,
+      "caption": 13
+    },
+    "rules": {
+      "h1": "text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight",
+      "h2": "text-2xl sm:text-3xl font-bold tracking-tight text-foreground",
+      "h3": "text-lg sm:text-xl font-semibold tracking-tight",
+      "h4": "text-base sm:text-lg font-semibold",
+      "body": "text-sm sm:text-base leading-relaxed text-foreground",
+      "caption": "text-xs font-medium tracking-wide uppercase text-muted-foreground",
+      "code_mono": "font-mono text-xs sm:text-sm tracking-tight"
+    }
+  },
+  "colors": {
+    "surfaces": [
+      {
+        "name": "page",
+        "kind": "solid",
+        "bg": "#F8FAFC",
+        "on_bg": "#0F172A",
+        "on_bg_muted": "#64748B",
+        "roles": {
+          "link": "#E11D48",
+          "error": "#DC2626",
+          "success": "#059669",
+          "warning": "#D97706",
+          "info": "#2563EB"
+        }
+      },
+      {
+        "name": "panel",
+        "kind": "solid",
+        "bg": "#FFFFFF",
+        "on_bg": "#0F172A",
+        "on_bg_muted": "#64748B",
+        "roles": {
+          "link": "#E11D48",
+          "error": "#DC2626",
+          "success": "#059669",
+          "warning": "#D97706"
+        }
+      },
+      {
+        "name": "dropzone_idle",
+        "kind": "solid",
+        "bg": "#F1F5F9",
+        "on_bg": "#0F172A",
+        "on_bg_muted": "#475569"
+      },
+      {
+        "name": "dropzone_active",
+        "kind": "solid",
+        "bg": "#FFF1F2",
+        "on_bg": "#9F1239",
+        "on_bg_muted": "#BE123C"
+      },
+      {
+        "name": "tool_card_pdf",
+        "kind": "solid",
+        "bg": "#FFFFFF",
+        "on_bg": "#0F172A",
+        "on_bg_muted": "#64748B"
+      },
+      {
+        "name": "tool_badge_word",
+        "kind": "solid",
+        "bg": "#EFF6FF",
+        "on_bg": "#1D4ED8",
+        "on_bg_muted": "#2563EB"
+      },
+      {
+        "name": "tool_badge_pdf",
+        "kind": "solid",
+        "bg": "#FFF1F2",
+        "on_bg": "#BE123C",
+        "on_bg_muted": "#E11D48"
+      },
+      {
+        "name": "tool_badge_img",
+        "kind": "solid",
+        "bg": "#F0FDF4",
+        "on_bg": "#15803D",
+        "on_bg_muted": "#16A34A"
+      },
+      {
+        "name": "dark_page",
+        "kind": "solid",
+        "bg": "#0B0F17",
+        "on_bg": "#F8FAFC",
+        "on_bg_muted": "#94A3B8",
+        "roles": {
+          "link": "#FB7185",
+          "error": "#F87171",
+          "success": "#34D399",
+          "warning": "#FBBF24"
+        }
+      },
+      {
+        "name": "dark_panel",
+        "kind": "solid",
+        "bg": "#131A26",
+        "on_bg": "#F8FAFC",
+        "on_bg_muted": "#94A3B8"
+      },
+      {
+        "name": "dark_dropzone",
+        "kind": "solid",
+        "bg": "#1E293B",
+        "on_bg": "#F1F5F9",
+        "on_bg_muted": "#94A3B8"
+      },
+      {
+        "name": "header_glass",
+        "kind": "glass",
+        "contrast_against": "#F8FAFC",
+        "guarantee": "backdrop-blur-xl bg-white/85 border-b border-slate-200/80 shadow-xs",
+        "on_bg": "#0F172A",
+        "on_bg_muted": "#64748B"
+      },
+      {
+        "name": "header_glass_dark",
+        "kind": "glass",
+        "contrast_against": "#0B0F17",
+        "guarantee": "backdrop-blur-xl bg-slate-950/85 border-b border-slate-800 shadow-xs",
+        "on_bg": "#F8FAFC",
+        "on_bg_muted": "#94A3B8"
+      }
+    ],
+    "accent": "#E11D48",
+    "on_accent": "#FFFFFF",
+    "accent_hover": "#BE123C",
+    "secondary_accent": "#2563EB",
+    "on_secondary_accent": "#FFFFFF",
+    "success_accent": "#059669",
+    "on_success_accent": "#FFFFFF"
+  },
+  "entry_surfaces": {
+    "/": "Document Studio Hub: Swiss Precision Topbar with ES/CA Language toggle, Hero statement with local-network badge, Interactive Bento Grid of 5 primary tools (Word to PDF, PDF to Word, Merge PDF, Split PDF, Images to PDF), and an instant drop-and-convert drawer.",
+    "/word-to-pdf": "Focused workspace: breadcrumb header, high-capacity drag-and-drop zone with DOCX preview, conversion progress bar, auto-download switch, and result summary with manual download fallback.",
+    "/pdf-to-word": "Focused workspace: breadcrumb header, drag-and-drop zone for PDF files, real-time OCR/conversion progress, page count display, and one-click DOCX download.",
+    "/merge-pdf": "Multi-file workspace: drag-and-drop zone for multiple PDFs, visual list with reorder/drag handles, page count tallies, merge button, real-time progress, and merged PDF output.",
+    "/split-pdf": "Precision splitting workspace: PDF uploader with page count detection, interactive mode toggle (Split by page ranges vs Extract every page vs Single page extraction), page thumbnail preview mockup, validation and ZIP/PDF download.",
+    "/images-to-pdf": "Image compilation workspace: multi-image dropzone (PNG, JPG, JPEG, WEBP), image reordering thumbnails, orientation selector (A4 Portrait/Landscape/Fit to Image), margin options, progress bar, and PDF compilation download."
+  },
+  "layouts_and_grids": {
+    "home_bento_grid": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto",
+    "tool_workspace_layout": "max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:py-12 space-y-8",
+    "dropzone_container": "relative border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center transition-all duration-200 ease-in-out cursor-pointer hover:border-rose-500 hover:bg-rose-50/30 dark:hover:bg-rose-950/10 focus-visible:ring-2 focus-visible:ring-rose-500",
+    "file_list_grid": "space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar",
+    "header_nav": "sticky top-0 z-50 w-full backdrop-blur-xl bg-white/85 dark:bg-slate-950/85 border-b border-slate-200/80 dark:border-slate-800 transition-colors"
+  },
+  "bilingual_support": {
+    "default_language": "es",
+    "supported_languages": ["es", "ca"],
+    "storage_key": "localpdf_lang_pref",
+    "dictionary_keys": {
+      "app_title": {"es": "DocuLocal — Suite de Herramientas PDF", "ca": "DocuLocal — Suite d'Eines PDF"},
+      "app_tagline": {"es": "100% Local, Privado y Seguro en tu Red Empresarial", "ca": "100% Local, Privat i Segur a la teva Xarxa Empresarial"},
+      "local_badge": {"es": "Servidor Local • Sin APIs Externas • Máx 100MB", "ca": "Servidor Local • Sense APIs Externes • Màx 100MB"},
+      "tools": {
+        "word_to_pdf": {"title_es": "Word a PDF", "title_ca": "Word a PDF", "desc_es": "Convierte documentos .docx a formato PDF estándar con fidelidad tipográfica", "desc_ca": "Converteix documents .docx a format PDF estàndard amb fidelitat tipogràfica"},
+        "pdf_to_word": {"title_es": "PDF a Word", "title_ca": "PDF a Word", "desc_es": "Transforma archivos PDF a documentos DOCX editables", "desc_ca": "Transforma fitxers PDF a documents DOCX editables"},
+        "merge_pdf": {"title_es": "Unir PDFs", "title_ca": "Unir PDFs", "desc_es": "Combina múltiples archivos PDF en un solo documento ordenado", "desc_ca": "Combina múltiples fitxers PDF en un sol document ordenat"},
+        "split_pdf": {"title_es": "Dividir PDF", "title_ca": "Dividir PDF", "desc_es": "Extrae rangos de páginas o separa cada página en PDFs individuales", "desc_ca": "Extreu rangs de pàgines o separa cada pàgina en PDFs individuals"},
+        "images_to_pdf": {"title_es": "Imágenes a PDF", "title_ca": "Imatges a PDF", "desc_es": "Convierte imágenes JPG, PNG o WEBP a un documento PDF unificado", "desc_ca": "Converteix imatges JPG, PNG o WEBP a un document PDF unificat"}
+      },
+      "actions": {
+        "drag_drop": {"es": "Arrastra y suelta tus archivos aquí", "ca": "Arrossega i deixa anar els teus fitxers aquí"},
+        "or_browse": {"es": "o haz clic para explorar en tu equipo", "ca": "o fes clic per explorar al teu equip"},
+        "max_size_hint": {"es": "Archivos soportados hasta 100 MB. Procesamiento en memoria local.", "ca": "Fitxers suportats fins a 100 MB. Processament en memòria local."},
+        "convert_btn": {"es": "Convertir ahora", "ca": "Convertir ara"},
+        "merge_btn": {"es": "Unir archivos PDF", "ca": "Unir fitxers PDF"},
+        "split_btn": {"es": "Dividir PDF", "ca": "Dividir PDF"},
+        "compile_btn": {"es": "Crear PDF desde Imágenes", "ca": "Crear PDF des d'Imatges"},
+        "download_ready": {"es": "Descargar archivo generado", "ca": "Descarregar fitxer generat"},
+        "auto_download_notice": {"es": "La descarga comenzará automáticamente en unos segundos...", "ca": "La descàrrega començarà automàticament en uns segons..."},
+        "clear_files": {"es": "Limpiar y reiniciar", "ca": "Netejar i reiniciar"},
+        "back_to_tools": {"es": "← Volver al panel de herramientas", "ca": "← Tornar al tauler d'eines"}
+      }
+    }
+  },
+  "motion_and_interactions": {
+    "hover_effects": "transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md",
+    "drag_active_animation": "scale-[1.01] border-rose-500 ring-4 ring-rose-500/10 shadow-lg",
+    "progress_bar_animation": "transition-all duration-300 ease-out",
+    "success_pulse": "animate-in fade-in zoom-in-95 duration-300"
+  },
+  "accessibility_and_testing": {
+    "data_testids": {
+      "language_toggle_es": "language-toggle-es",
+      "language_toggle_ca": "language-toggle-ca",
+      "theme_toggle": "theme-toggle-btn",
+      "nav_home_link": "nav-home-link",
+      "tool_card_word_to_pdf": "tool-card-word-to-pdf",
+      "tool_card_pdf_to_word": "tool-card-pdf-to-word",
+      "tool_card_merge_pdf": "tool-card-merge-pdf",
+      "tool_card_split_pdf": "tool-card-split-pdf",
+      "tool_card_images_to_pdf": "tool-card-images-to-pdf",
+      "file_dropzone": "file-dropzone-area",
+      "file_input_hidden": "file-input-element",
+      "action_convert_btn": "action-convert-submit-btn",
+      "conversion_progress_bar": "conversion-progress-indicator",
+      "auto_download_checkbox": "auto-download-toggle-checkbox",
+      "download_result_btn": "download-result-action-btn",
+      "split_range_input": "split-range-input-field",
+      "file_item_remove_btn": "file-item-remove-btn"
+    },
+    "wcag_compliance": "WCAG AA compliant contrast (>4.5:1 on text, >3:1 on controls). Visible focus rings with outline-offset-2. Aria live regions for progress updates."
+  },
+  "instructions_to_main_agent": [
+    "1. BILINGUAL SUPPORT: Implement an active language context (Spanish / Catalan) with fallback to localStorage. All UI labels, tool descriptions, buttons, tooltips, error messages, and success notifications must switch dynamically and remember the preference.",
+    "2. 100% LOCAL PROCESSING (NO EXTERNAL APIS): Implement backend endpoints in FastAPI for DOCX→PDF (using python-docx / libreoffice / docx2pdf / reportlab / pdf2docx), PDF→DOCX (using pdf2docx), PDF Merge (using pypdf / PyPDF2), PDF Split (using pypdf), and Images→PDF (using Pillow / reportlab / img2pdf). Ensure temporary files are securely created in a temporary directory and wiped immediately after streaming or via background cleanup task.",
+    "3. FILE SIZE LIMIT: Strictly enforce 100MB maximum file size with clear client-side validation and backend 413 error payload.",
+    "4. DRAG & DROP & PROGRESS: Create a rich drag-and-drop zone using standard HTML5 drag events or react-dropzone. Provide realistic step-by-step progress bars (0% → 30% uploading → 70% processing → 100% ready) and automatic download triggering using invisible anchor tag with fallback button.",
+    "5. VISUAL REORDERING FOR MERGE & IMAGES: For 'Merge PDFs' and 'Images to PDF', show list of added files with thumbnail/icon, file size, drag-and-drop or up/down arrow reordering, and individual remove buttons.",
+    "6. SPLIT OPTIONS: Support 3 splitting modes: a) Extract custom range (e.g., '1-3, 5, 8-10'), b) Split into individual single-page PDFs (downloaded as a ZIP), c) Split at fixed intervals.",
+    "7. MODERN SWISS LOOK: Use Plus Jakarta Sans for headings, DM Sans for text, JetBrains Mono for file metrics. Use crisp borders, subtle shadows, and rose/crimson accents for PDF branding.",
+    "8. TESTS & ATTRIBUTES: Ensure all interactive controls have data-testid attributes matching accessibility_and_testing.data_testids."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": {
+    "code_standards": "Strict TypeScript, no 'any', type all API payloads and handlers. Use FastAPI APIRouter prefix='/api' and mirror interfaces in frontend/src/lib/api.ts.",
+    "cleanliness": "Automatic temporary file deletion using Python tempfile / background cleanup tasks to ensure zero data retention on local server storage."
+  }
+}

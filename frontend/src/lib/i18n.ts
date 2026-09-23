@@ -1,0 +1,105 @@
+export type Lang = "es" | "ca";
+
+const KEY = "pdf-workshop-lang";
+
+export function getLang(): Lang {
+  if (typeof localStorage === "undefined") return "es";
+  const v = localStorage.getItem(KEY);
+  return v === "ca" ? "ca" : "es";
+}
+
+export function setLang(lang: Lang) {
+  localStorage.setItem(KEY, lang);
+}
+
+type Dict = Record<string, string>;
+
+const es: Dict = {
+  brand: "Taller PDF",
+  tagline: "Suite de documentos interna",
+  heroTitle: "Convierte, une y divide documentos sin salir de la red local",
+  heroBody:
+    "Todo el procesamiento se ejecuta en el servidor de la empresa. Ningún archivo sale de la red y los temporales se eliminan al terminar.",
+  badgeLocal: "100 % local",
+  badgeLimit: "Máx. 100 MB por archivo",
+  badgeClean: "Borrado automático",
+  toolsTitle: "Herramientas",
+  w2p: "Word a PDF",
+  w2pDesc: "DOCX, DOC, ODT o RTF con formato fiel.",
+  p2w: "PDF a Word",
+  p2wDesc: "Recupera texto y tablas en un DOCX editable.",
+  merge: "Unir PDF",
+  mergeDesc: "Combina varios PDF en un único documento.",
+  split: "Dividir PDF",
+  splitDesc: "Extrae páginas o rangos concretos.",
+  img: "Imágenes a PDF",
+  imgDesc: "JPG, PNG o WEBP en un solo PDF.",
+  dropTitle: "Arrastra los archivos aquí",
+  dropHint: "o haz clic para seleccionarlos",
+  accepts: "Formatos admitidos",
+  selected: "Archivos seleccionados",
+  remove: "Quitar",
+  clear: "Vaciar",
+  run: "Procesar y descargar",
+  processing: "Procesando…",
+  uploading: "Subiendo archivo…",
+  working: "Trabajando en el servidor…",
+  done: "Listo. La descarga ha comenzado.",
+  rangesLabel: "Páginas o rangos (opcional)",
+  rangesHint: "Ej.: 1-3, 5, 8-10. Vacío = una página por archivo.",
+  errTooBig: "El archivo supera el límite de 100 MB",
+  errNeedFiles: "Añade al menos un archivo",
+  errNeedTwo: "Añade al menos 2 archivos PDF",
+  errGeneric: "No se ha podido completar la operación",
+  langLabel: "Idioma",
+  footer: "Procesamiento local · sin servicios externos",
+  back: "Elegir otra herramienta",
+};
+
+const ca: Dict = {
+  brand: "Taller PDF",
+  tagline: "Suite de documents interna",
+  heroTitle: "Converteix, uneix i divideix documents sense sortir de la xarxa local",
+  heroBody:
+    "Tot el processament s'executa al servidor de l'empresa. Cap fitxer surt de la xarxa i els temporals s'eliminen en acabar.",
+  badgeLocal: "100 % local",
+  badgeLimit: "Màx. 100 MB per fitxer",
+  badgeClean: "Esborrat automàtic",
+  toolsTitle: "Eines",
+  w2p: "Word a PDF",
+  w2pDesc: "DOCX, DOC, ODT o RTF amb format fidel.",
+  p2w: "PDF a Word",
+  p2wDesc: "Recupera text i taules en un DOCX editable.",
+  merge: "Unir PDF",
+  mergeDesc: "Combina diversos PDF en un sol document.",
+  split: "Dividir PDF",
+  splitDesc: "Extreu pàgines o intervals concrets.",
+  img: "Imatges a PDF",
+  imgDesc: "JPG, PNG o WEBP en un sol PDF.",
+  dropTitle: "Arrossega els fitxers aquí",
+  dropHint: "o fes clic per seleccionar-los",
+  accepts: "Formats admesos",
+  selected: "Fitxers seleccionats",
+  remove: "Treure",
+  clear: "Buidar",
+  run: "Processar i descarregar",
+  processing: "Processant…",
+  uploading: "Pujant el fitxer…",
+  working: "Treballant al servidor…",
+  done: "Fet. La descàrrega ha començat.",
+  rangesLabel: "Pàgines o intervals (opcional)",
+  rangesHint: "Ex.: 1-3, 5, 8-10. Buit = una pàgina per fitxer.",
+  errTooBig: "El fitxer supera el límit de 100 MB",
+  errNeedFiles: "Afegeix com a mínim un fitxer",
+  errNeedTwo: "Afegeix com a mínim 2 fitxers PDF",
+  errGeneric: "No s'ha pogut completar l'operació",
+  langLabel: "Idioma",
+  footer: "Processament local · sense serveis externs",
+  back: "Triar una altra eina",
+};
+
+export const DICTS: Record<Lang, Dict> = { es, ca };
+
+export function translator(lang: Lang) {
+  return (key: string) => DICTS[lang][key] ?? key;
+}

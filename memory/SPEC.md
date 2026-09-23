@@ -1,0 +1,19 @@
+# Taller PDF — spec
+
+App web interna tipo iLovePDF. Todo el procesamiento es local (LibreOffice headless, pdf2docx, pypdf, Pillow). Sin servicios externos. Sin base de datos: los endpoints son stateless y los temporales se borran tras la respuesta (BackgroundTask).
+
+## Endpoints (todos POST multipart, bajo /api)
+- `/api/tools/word-to-pdf` — campo `file` (.docx/.doc/.odt/.rtf) → PDF
+- `/api/tools/pdf-to-word` — campo `file` (.pdf) → DOCX
+- `/api/tools/merge-pdf` — campo `files` (≥2 .pdf) → PDF unido
+- `/api/tools/split-pdf` — campo `file` (.pdf) + `ranges` ("1-3,5"; vacío = una página por archivo) → PDF (1 rango) o ZIP (varios)
+- `/api/tools/images-to-pdf` — campo `files` (.jpg/.jpeg/.png/.webp) → PDF
+
+Errores: 400 formato/rango inválido o pocos archivos, 413 >100 MB, 500 fallo de conversión. Cuerpo `{"detail": "..."}`.
+
+## Frontend
+- Una sola página (`/`, `src/pages/Home.tsx`) con 5 tarjetas de herramienta; al elegir una se abre `ToolPanel` (drag & drop, lista de archivos, rangos, barra de progreso XHR, descarga automática vía blob).
+- Idioma ES/CA con conmutador en la cabecera, persistido en `localStorage` (`pdf-workshop-lang`), diccionarios en `src/lib/i18n.ts`.
+- Subida binaria con `apiUploadFile` / `downloadBlob` en `src/lib/api.ts`.
+
+## Sin autenticación ni cuentas.
