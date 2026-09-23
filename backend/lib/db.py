@@ -10,9 +10,12 @@ from pymongo import ASCENDING, DESCENDING, IndexModel
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-mongo_url = os.environ["MONGO_URL"]
+# Defaults keep the app runnable with no .env (e.g. the packaged .exe): this build is
+# DB-free — the /api/tools/* endpoints never touch Mongo — so a missing/offline Mongo
+# must not crash boot. ensure_indexes() below already swallows connection errors.
+mongo_url = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ["DB_NAME"]]
+db = client[os.environ.get("DB_NAME", "app")]
 
 logger = logging.getLogger(__name__)
 

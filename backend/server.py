@@ -81,3 +81,31 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+# --- Static frontend (packaged desktop / single-origin build) ---
+# In the dev pod the Vite server (port 3000) hosts the SPA and proxies /api here, so this
+# block is inert (no frontend/dist exists). In the packaged .exe there is no Node process:
+# FastAPI serves the pre-built SPA from the same origin as /api. Registered LAST so the
+# /api routes above always win.
+_frontend_dist = os.environ.get("FRONTEND_DIST") or str(ROOT_DIR.parent / "frontend" / "dist")
+if Path(_frontend_dist).is_dir():
+    from fastapi import HTTPException
+    from fastapi.responses import FileResponse
+    from fastapi.staticfiles import StaticFiles
+
+    _dist = Path(_frontend_dist)
+    _assets = _dist / "assets"
+    if _assets.is_dir():
+        app.mount("/assets", StaticFiles(directory=_assets), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def _serve_spa(full_path: str):
+        if full_path.startswith("api"):
+            raise HTTPException(status_code=404, detail="not found")
+        candidate = _dist / full_path
+        if full_path and candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(_dist / "index.html")  # SPA fallback for client-side routes
+
+    logger.info("Serving bundled frontend from %s", _dist)

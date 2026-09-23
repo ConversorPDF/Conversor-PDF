@@ -13,9 +13,43 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
+import glob
+
 router = APIRouter(prefix="/tools", tags=["tools"])
 
 MAX_BYTES = 100 * 1024 * 1024  # 100 MB per file
+
+
+def _soffice_bin() -> str:
+    """Locate LibreOffice's soffice. Env override wins, then PATH, then common Windows paths."""
+    if override := os.environ.get("SOFFICE_BIN"):
+        return override
+    for name in ("soffice", "soffice.exe"):
+        if found := shutil.which(name):
+            return found
+    for path in (
+        r"C:\Program Files\LibreOffice\program\soffice.exe",
+        r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+    ):
+        if os.path.isfile(path):
+            return path
+    return "soffice"  # last resort — subprocess raises a clear error if truly missing
+
+
+def _gs_bin() -> str:
+    """Locate Ghostscript. Env override wins, then PATH (gs/gswin64c/gswin32c), then Windows paths."""
+    if override := os.environ.get("GS_BIN"):
+        return override
+    for name in ("gs", "gswin64c", "gswin32c"):
+        if found := shutil.which(name):
+            return found
+    for pattern in (
+        r"C:\Program Files\gs\gs*\bin\gswin64c.exe",
+        r"C:\Program Files\gs\gs*\bin\gswin32c.exe",
+    ):
+        if hits := sorted(glob.glob(pattern)):
+            return hits[-1]
+    return "gs"
 
 
 def _cleanup(path: str):
@@ -59,7 +93,7 @@ def _respond(path: Path, workdir: str, media_type: str, extra_headers: dict | No
 
 def _soffice(src: Path, outdir: Path) -> Path:
     subprocess.run(
-        ["soffice", "--headless", "--norestore", "--convert-to", "pdf", "--outdir", str(outdir), str(src)],
+        [_soffice_bin(), "--headless", "--norestore", "--convert-to", "pdf", "--outdir", str(outdir), str(src)],
         check=True,
         capture_output=True,
         timeout=300,
@@ -126,7 +160,7 @@ async def compress_pdf(file: UploadFile = File(...), level: str = Form("recomend
         def _gs():
             subprocess.run(
                 [
-                    "gs", "-sDEVICE=pdfwrite", "-dCompatibilityLevel=1.4",
+                    _gs_bin(), "-sDEVICE=pdfwrite", "-dCompatibilityLevel=1.4",
                     f"-dPDFSETTINGS={quality}", "-dNOPAUSE", "-dQUIET", "-dBATCH",
                     "-dDetectDuplicateImages=true", f"-sOutputFile={out}", str(src),
                 ],

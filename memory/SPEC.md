@@ -18,3 +18,9 @@ Errores: 400 formato/rango inválido o pocos archivos, 413 >100 MB, 500 fallo de
 - Subida binaria con `apiUploadFile` / `downloadBlob` en `src/lib/api.ts`.
 
 ## Sin autenticación ni cuentas.
+
+## Empaquetado como .exe de Windows (packaging/)
+- `backend/desktop.py`: entrypoint que arranca uvicorn en 127.0.0.1 y abre el navegador; FastAPI sirve el SPA pre-construido (bloque estático al final de `server.py`, activo solo si existe `frontend/dist` o `FRONTEND_DIST`).
+- `packaging/taller_pdf.spec` (PyInstaller), `packaging/build_windows.bat`, `packaging/README_WINDOWS.md`.
+- DB-free: `lib/db.py` usa defaults, la app arranca sin Mongo. Binarios `soffice`/`gswin64c` se auto-localizan (PATH o rutas estándar de Windows) o vía `SOFFICE_BIN`/`GS_BIN`.
+- El .exe se compila EN Windows (PyInstaller es específico de plataforma). Requiere LibreOffice y Ghostscript instalados en el equipo de destino.
