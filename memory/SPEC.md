@@ -11,7 +11,7 @@ App web interna tipo iLovePDF. Todo el procesamiento es local (LibreOffice headl
 - `/api/tools/compress-pdf` — campo `file` (.pdf) + `level` (ligera=/printer, recomendada=/ebook, maxima=/screen) → PDF; cabeceras `X-Original-Size`, `X-Compressed-Size`, `X-Reduction-Percent` (Ghostscript). Si el resultado no encoge, devuelve el original (reducción 0%).
 
 Errores: 400 formato/rango inválido o pocos archivos, 413 >100 MB, 500 fallo de conversión. Cuerpo `{"detail": "..."}`.
-- `/api/tools/convert-audio` — campo `files` (audio .mp3/.wav/.m4a/.flac/.aac/.ogg… o vídeo .mp4/.mov/.mkv/.avi/.webm…) + `target` (mp3|wav|flac|m4a) → audio (1 archivo) o ZIP (2+). Vía ffmpeg (`-vn`): MP3⇄WAV, M4A→MP3, FLAC→MP3 y extracción de audio de vídeo. Requiere ffmpeg (FFMPEG_BIN auto-localizado).
+- `/api/tools/convert-audio` — campo `files` (audio .mp3/.wav/.m4a/.flac/.aac/.ogg… o vídeo .mp4/.mov/.mkv/.avi/.webm…) + `target` (mp3|wav|flac|m4a) + opcionales `bitrate` (128|192|320, solo mp3/m4a), `normalize` (bool → loudnorm EBU R128), `start`/`end` (recorte, seg o mm:ss) → audio (1 archivo) o ZIP (2+). Vía ffmpeg (`-vn`, `-ss`/`-to` antes de `-i`). Requiere ffmpeg (FFMPEG_BIN auto-localizado).
 - `/api/tools/convert-image` — campo `files` (≥1 .jpg/.jpeg/.png/.bmp/.webp/.tif/.tiff) + `target` (jpg|png) → imagen (1 archivo) o ZIP (2+). PNG sin pérdidas (optimize), JPEG quality=95 subsampling=0 aplanando alfa sobre blanco. Cubre las 8 conversiones (JPG/PNG/BMP/WEBP/TIFF → JPG o PNG).
 
 ## Frontend

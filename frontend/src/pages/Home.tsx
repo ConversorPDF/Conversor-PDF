@@ -140,6 +140,9 @@ const TOOLS: ToolConfig[] = [
         { value: "m4a", labelKey: "targetM4a" },
       ],
     },
+    bitrate: true,
+    normalize: true,
+    trim: true,
   },
   {
     id: "extract-audio",
@@ -160,6 +163,9 @@ const TOOLS: ToolConfig[] = [
         { value: "wav", labelKey: "targetWav" },
       ],
     },
+    bitrate: true,
+    normalize: true,
+    trim: true,
   },
 ];
 

@@ -3,6 +3,7 @@ import type { DragEvent } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, FileUp, Loader2, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -36,7 +37,12 @@ export interface ToolConfig {
   category: "documents" | "image" | "audio";
   ranges?: boolean;
   select?: SelectSpec;
+  bitrate?: boolean; // MP3/M4A quality selector (128/192/320)
+  normalize?: boolean; // even-out loudness across tracks
+  trim?: boolean; // start/end cut
 }
+
+const BITRATES = ["128", "192", "320"];
 
 const MAX_BYTES = 100 * 1024 * 1024;
 
@@ -57,6 +63,10 @@ export default function ToolPanel({ tool, lang, onBack }: Props) {
   const [files, setFiles] = useState<File[]>([]);
   const [ranges, setRanges] = useState("");
   const [selectValue, setSelectValue] = useState(tool.select?.default ?? "");
+  const [bitrate, setBitrate] = useState("192");
+  const [normalize, setNormalize] = useState(false);
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<"idle" | "uploading" | "working">("idle");
@@ -94,6 +104,12 @@ export default function ToolPanel({ tool, lang, onBack }: Props) {
     else files.forEach((f) => form.append("files", f));
     if (tool.ranges) form.append("ranges", ranges);
     if (tool.select) form.append(tool.select.field, selectValue);
+    if (tool.bitrate) form.append("bitrate", bitrate);
+    if (tool.normalize) form.append("normalize", normalize ? "true" : "false");
+    if (tool.trim) {
+      form.append("start", start.trim());
+      form.append("end", end.trim());
+    }
 
     setPhase("uploading");
     setProgress(0);
@@ -116,6 +132,8 @@ export default function ToolPanel({ tool, lang, onBack }: Props) {
       }
       setFiles([]);
       setRanges("");
+      setStart("");
+      setEnd("");
       if (inputRef.current) inputRef.current.value = "";
     } catch (err) {
       setPhase("idle");
@@ -270,6 +288,70 @@ export default function ToolPanel({ tool, lang, onBack }: Props) {
             </SelectContent>
           </Select>
         </div>
+      )}
+
+      {tool.bitrate && (selectValue === "mp3" || selectValue === "m4a") && (
+        <div className="mt-5 max-w-md">
+          <Label htmlFor="bitrate-select">{t("bitrateLabel")}</Label>
+          <Select value={bitrate} onValueChange={setBitrate}>
+            <SelectTrigger
+              id="bitrate-select"
+              className="mt-1.5 w-full"
+              data-testid="tool-bitrate-trigger"
+            >
+              <SelectValue>{(v) => `${v as string} kbps`}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {BITRATES.map((b) => (
+                <SelectItem key={b} value={b} data-testid={`tool-bitrate-option-${b}`}>
+                  {b} kbps
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {tool.trim && (
+        <div className="mt-5 max-w-md">
+          <Label>{t("trimLabel")}</Label>
+          <div className="mt-1.5 flex items-center gap-3">
+            <Input
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+              placeholder={t("trimStart")}
+              className="font-mono"
+              data-testid="tool-trim-start"
+            />
+            <span className="text-muted-foreground">→</span>
+            <Input
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+              placeholder={t("trimEnd")}
+              className="font-mono"
+              data-testid="tool-trim-end"
+            />
+          </div>
+          <p className="mt-1.5 text-xs text-muted-foreground">{t("trimHint")}</p>
+        </div>
+      )}
+
+      {tool.normalize && (
+        <label
+          className="mt-5 flex max-w-md cursor-pointer items-start gap-3 rounded-xl border border-border bg-muted/30 p-4"
+          data-testid="tool-normalize-label"
+        >
+          <Checkbox
+            checked={normalize}
+            onCheckedChange={(v) => setNormalize(v === true)}
+            className="mt-0.5"
+            data-testid="tool-normalize-checkbox"
+          />
+          <span>
+            <span className="block text-sm font-medium">{t("normalizeLabel")}</span>
+            <span className="block text-xs text-muted-foreground">{t("normalizeHint")}</span>
+          </span>
+        </label>
       )}
 
       {busy && (

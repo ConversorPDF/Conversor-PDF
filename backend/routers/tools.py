@@ -427,18 +427,53 @@ _AUDIO_CODECS: dict[str, list[str]] = {
     "m4a": ["-c:a", "aac", "-b:a", "192k"],
 }
 _AUDIO_MEDIA = {"mp3": "audio/mpeg", "wav": "audio/wav", "flac": "audio/flac", "m4a": "audio/mp4"}
+_BITRATES = {"128", "192", "320"}
+_TIME_RE = re.compile(r"^\d+(:\d{1,2}){0,2}(\.\d+)?$")  # 90, 1:30, 01:02:03, 12.5
+
+
+def _audio_codec_args(target: str, bitrate: str) -> list[str]:
+    if target == "mp3":
+        return ["-c:a", "libmp3lame", "-b:a", f"{bitrate}k"]
+    if target == "m4a":
+        return ["-c:a", "aac", "-b:a", f"{bitrate}k"]
+    if target == "wav":
+        return ["-c:a", "pcm_s16le"]
+    return ["-c:a", "flac"]  # lossless — bitrate ignored
 
 
 @router.post("/convert-audio")
-async def convert_audio(files: List[UploadFile] = File(...), target: str = Form("mp3")):
-    """Convert audio between formats or extract the audio track from a video, via ffmpeg."""
+async def convert_audio(
+    files: List[UploadFile] = File(...),
+    target: str = Form("mp3"),
+    bitrate: str = Form("192"),
+    normalize: str = Form("false"),
+    start: str = Form(""),
+    end: str = Form(""),
+):
+    """Convert audio / extract audio from video via ffmpeg, with optional bitrate,
+    loudness normalisation (EBU R128) and trim (start/end)."""
     if not files:
         raise HTTPException(status_code=400, detail="Selecciona al menos un archivo")
     target = target.lower()
-    if target not in _AUDIO_CODECS:
+    if target not in _AUDIO_MEDIA:
         raise HTTPException(status_code=400, detail="Formato de destino no soportado")
+    if bitrate not in _BITRATES:
+        bitrate = "192"
+    start, end = start.strip(), end.strip()
+    for label, value in (("inicio", start), ("fin", end)):
+        if value and not _TIME_RE.match(value):
+            raise HTTPException(status_code=400, detail=f"Tiempo de {label} no válido: {value}")
+    normalize_on = normalize.strip().lower() in ("1", "true", "yes", "on")
     for f in files:
         _check_ext(f, _AUDIO_INPUTS + _VIDEO_INPUTS)
+
+    seek: list[str] = []
+    if start:
+        seek += ["-ss", start]
+    if end:
+        seek += ["-to", end]
+    filters = ["-af", "loudnorm=I=-16:TP=-1.5:LRA=11"] if normalize_on else []
+
     workdir = tempfile.mkdtemp(prefix="audio_")
     try:
         outs: list[Path] = []
@@ -449,12 +484,11 @@ async def convert_audio(files: List[UploadFile] = File(...), target: str = Form(
             out = Path(workdir) / f"{stem}.{target}"
 
             def _run(src: Path = src, out: Path = out):
-                subprocess.run(
-                    [_ffmpeg_bin(), "-y", "-i", str(src), "-vn", *_AUDIO_CODECS[target], str(out)],
-                    check=True,
-                    capture_output=True,
-                    timeout=600,
-                )
+                cmd = [
+                    _ffmpeg_bin(), "-y", *seek, "-i", str(src), "-vn",
+                    *filters, *_audio_codec_args(target, bitrate), str(out),
+                ]
+                subprocess.run(cmd, check=True, capture_output=True, timeout=600)
 
             await asyncio.to_thread(_run)
             if not out.exists() or out.stat().st_size == 0:
