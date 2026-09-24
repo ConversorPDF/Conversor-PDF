@@ -337,3 +337,69 @@ async def images_to_pdf(files: List[UploadFile] = File(...)):
         _cleanup(workdir)
         raise HTTPException(status_code=500, detail=f"Error al generar el PDF: {exc}") from exc
     return _respond(out, workdir, "application/pdf")
+
+
+_IMG_INPUTS = (".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tif", ".tiff")
+
+
+def _zip_dedup(paths: list[Path], zip_path: Path) -> None:
+    used: dict[str, int] = {}
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for p in paths:
+            arc = p.name
+            if arc in used:
+                used[arc] += 1
+                arc = f"{p.stem}_{used[p.name]}{p.suffix}"
+            else:
+                used[arc] = 0
+            zf.write(p, arc)
+
+
+@router.post("/convert-image")
+async def convert_image(files: List[UploadFile] = File(...), target: str = Form("png")):
+    if not files:
+        raise HTTPException(status_code=400, detail="Selecciona al menos una imagen")
+    target = target.lower()
+    if target not in ("jpg", "jpeg", "png"):
+        raise HTTPException(status_code=400, detail="Formato de destino no soportado")
+    out_ext = "png" if target == "png" else "jpg"
+    for f in files:
+        _check_ext(f, _IMG_INPUTS)
+    workdir = tempfile.mkdtemp(prefix="conv_")
+    try:
+        from PIL import Image
+
+        outs: list[Path] = []
+        for i, f in enumerate(files):
+            suffix = Path(f.filename or f"img_{i}").suffix
+            src = await _save(f, Path(workdir) / f"in_{i}{suffix}")
+            im = Image.open(src)
+            stem = Path(f.filename or f"imagen_{i}").stem
+            out = Path(workdir) / f"{stem}.{out_ext}"
+            if out_ext == "png":
+                # Lossless: preserve alpha/palette exactly where present.
+                im.save(out, "PNG", optimize=True)
+            else:
+                # JPEG has no alpha — flatten onto white, then encode near-lossless.
+                if im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info):
+                    rgba = im.convert("RGBA")
+                    bg = Image.new("RGB", rgba.size, (255, 255, 255))
+                    bg.paste(rgba, mask=rgba.split()[-1])
+                    im = bg
+                else:
+                    im = im.convert("RGB")
+                im.save(out, "JPEG", quality=95, subsampling=0)  # keep quality
+            im.close()
+            outs.append(out)
+        if len(outs) == 1:
+            media = "image/png" if out_ext == "png" else "image/jpeg"
+            return _respond(outs[0], workdir, media)
+        zip_path = Path(workdir) / f"imagenes-{out_ext}.zip"
+        _zip_dedup(outs, zip_path)
+    except HTTPException:
+        _cleanup(workdir)
+        raise
+    except Exception as exc:  # noqa: BLE001
+        _cleanup(workdir)
+        raise HTTPException(status_code=500, detail=f"Error al convertir: {exc}") from exc
+    return _respond(zip_path, workdir, "application/zip")

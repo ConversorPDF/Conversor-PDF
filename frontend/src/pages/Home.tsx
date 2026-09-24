@@ -3,6 +3,7 @@ import {
   FileText,
   FileType2,
   HardDrive,
+  Image as ImageIcon,
   Images,
   Layers,
   Minimize2,
@@ -10,6 +11,7 @@ import {
   ShieldCheck,
   Trash,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
 import ToolPanel from "@/components/ToolPanel";
 import type { ToolConfig } from "@/components/ToolPanel";
@@ -27,6 +29,7 @@ const TOOLS: ToolConfig[] = [
     multiple: true,
     minFiles: 1,
     field: "files",
+    category: "documents",
   },
   {
     id: "pdf-to-word",
@@ -37,6 +40,7 @@ const TOOLS: ToolConfig[] = [
     multiple: false,
     minFiles: 1,
     field: "file",
+    category: "documents",
   },
   {
     id: "merge-pdf",
@@ -47,6 +51,7 @@ const TOOLS: ToolConfig[] = [
     multiple: true,
     minFiles: 2,
     field: "files",
+    category: "documents",
   },
   {
     id: "split-pdf",
@@ -57,17 +62,8 @@ const TOOLS: ToolConfig[] = [
     multiple: false,
     minFiles: 1,
     field: "file",
+    category: "documents",
     ranges: true,
-  },
-  {
-    id: "images-to-pdf",
-    endpoint: "/tools/images-to-pdf",
-    titleKey: "img",
-    descKey: "imgDesc",
-    accept: ".jpg,.jpeg,.png,.webp",
-    multiple: true,
-    minFiles: 1,
-    field: "files",
   },
   {
     id: "compress-pdf",
@@ -78,6 +74,7 @@ const TOOLS: ToolConfig[] = [
     multiple: false,
     minFiles: 1,
     field: "file",
+    category: "documents",
     select: {
       field: "level",
       labelKey: "levelLabel",
@@ -89,6 +86,37 @@ const TOOLS: ToolConfig[] = [
       ],
     },
   },
+  {
+    id: "convert-image",
+    endpoint: "/tools/convert-image",
+    titleKey: "convertImg",
+    descKey: "convertImgDesc",
+    accept: ".jpg,.jpeg,.png,.bmp,.webp,.tif,.tiff",
+    multiple: true,
+    minFiles: 1,
+    field: "files",
+    category: "image",
+    select: {
+      field: "target",
+      labelKey: "targetLabel",
+      default: "png",
+      options: [
+        { value: "png", labelKey: "targetPng" },
+        { value: "jpg", labelKey: "targetJpg" },
+      ],
+    },
+  },
+  {
+    id: "images-to-pdf",
+    endpoint: "/tools/images-to-pdf",
+    titleKey: "img",
+    descKey: "imgDesc",
+    accept: ".jpg,.jpeg,.png,.webp",
+    multiple: true,
+    minFiles: 1,
+    field: "files",
+    category: "image",
+  },
 ];
 
 const ICONS: Record<string, typeof FileText> = {
@@ -98,17 +126,29 @@ const ICONS: Record<string, typeof FileText> = {
   "split-pdf": Scissors,
   "images-to-pdf": Images,
   "compress-pdf": Minimize2,
+  "convert-image": ImageIcon,
 };
+
+const TABS: { id: "documents" | "image"; labelKey: string }[] = [
+  { id: "documents", labelKey: "tabDocuments" },
+  { id: "image", labelKey: "tabImage" },
+];
 
 export default function Home() {
   const [lang, setLangState] = useState<Lang>(() => getLang());
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"documents" | "image">("documents");
   const t = translator(lang);
   const active = TOOLS.find((x) => x.id === activeId) ?? null;
 
   function changeLang(next: Lang) {
     setLangState(next);
     setLang(next);
+  }
+
+  function selectTab(next: string) {
+    setTab(next as "documents" | "image");
+    setActiveId(null); // collapse any open panel when switching category
   }
 
   return (
@@ -182,40 +222,61 @@ export default function Home() {
         </section>
 
         <section className="mt-12">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {t("toolsTitle")}
-          </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {TOOLS.map((tool) => {
-              const Icon = ICONS[tool.id];
-              const selected = tool.id === activeId;
+          <Tabs value={tab} onValueChange={selectTab}>
+            <TabsList variant="line" data-testid="category-tabs">
+              {TABS.map((tb) => (
+                <TabsTrigger key={tb.id} value={tb.id} data-testid={`tab-${tb.id}`}>
+                  {t(tb.labelKey)}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {TABS.map((tb) => {
+              const tools = TOOLS.filter((x) => x.category === tb.id);
               return (
-                <button
-                  key={tool.id}
-                  type="button"
-                  onClick={() => setActiveId(tool.id)}
-                  className={cn(
-                    "group rounded-xl border border-border bg-card p-5 text-left transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md",
-                    selected && "border-primary shadow-md ring-4 ring-primary/10",
-                  )}
-                  data-testid={`tool-card-${tool.id}`}
-                >
-                  <span className="grid size-10 place-items-center rounded-lg bg-accent text-accent-foreground">
-                    <Icon className="size-5" />
-                  </span>
-                  <p className="mt-3 font-heading text-base font-semibold">{t(tool.titleKey)}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{t(tool.descKey)}</p>
-                </button>
+                <TabsContent key={tb.id} value={tb.id} className="mt-6">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {tools.map((tool) => {
+                      const Icon = ICONS[tool.id];
+                      const selected = tool.id === activeId;
+                      return (
+                        <button
+                          key={tool.id}
+                          type="button"
+                          onClick={() => setActiveId(tool.id)}
+                          className={cn(
+                            "group rounded-xl border border-border bg-card p-5 text-left transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md",
+                            selected && "border-primary shadow-md ring-4 ring-primary/10",
+                          )}
+                          data-testid={`tool-card-${tool.id}`}
+                        >
+                          <span className="grid size-10 place-items-center rounded-lg bg-accent text-accent-foreground">
+                            <Icon className="size-5" />
+                          </span>
+                          <p className="mt-3 font-heading text-base font-semibold">
+                            {t(tool.titleKey)}
+                          </p>
+                          <p className="mt-1 text-sm text-muted-foreground">{t(tool.descKey)}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {active && active.category === tb.id ? (
+                    <div className="mt-8">
+                      <ToolPanel
+                        key={active.id}
+                        tool={active}
+                        lang={lang}
+                        onBack={() => setActiveId(null)}
+                      />
+                    </div>
+                  ) : null}
+                </TabsContent>
               );
             })}
-          </div>
+          </Tabs>
         </section>
-
-        <div className="mt-8">
-          {active ? (
-            <ToolPanel key={active.id} tool={active} lang={lang} onBack={() => setActiveId(null)} />
-          ) : null}
-        </div>
       </main>
 
       <footer className="border-t border-border py-6">

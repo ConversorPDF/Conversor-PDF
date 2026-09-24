@@ -11,9 +11,10 @@ App web interna tipo iLovePDF. Todo el procesamiento es local (LibreOffice headl
 - `/api/tools/compress-pdf` — campo `file` (.pdf) + `level` (ligera=/printer, recomendada=/ebook, maxima=/screen) → PDF; cabeceras `X-Original-Size`, `X-Compressed-Size`, `X-Reduction-Percent` (Ghostscript). Si el resultado no encoge, devuelve el original (reducción 0%).
 
 Errores: 400 formato/rango inválido o pocos archivos, 413 >100 MB, 500 fallo de conversión. Cuerpo `{"detail": "..."}`.
+- `/api/tools/convert-image` — campo `files` (≥1 .jpg/.jpeg/.png/.bmp/.webp/.tif/.tiff) + `target` (jpg|png) → imagen (1 archivo) o ZIP (2+). PNG sin pérdidas (optimize), JPEG quality=95 subsampling=0 aplanando alfa sobre blanco. Cubre las 8 conversiones (JPG/PNG/BMP/WEBP/TIFF → JPG o PNG).
 
 ## Frontend
-- Una sola página (`/`, `src/pages/Home.tsx`) con 5 tarjetas de herramienta; al elegir una se abre `ToolPanel` (drag & drop, lista de archivos, rangos, barra de progreso XHR, descarga automática vía blob).
+- Página única (`/`, `src/pages/Home.tsx`) con **pestañas** (Tabs): "Documentos" (Word→PDF, PDF→Word, Unir, Dividir, Comprimir) e "Imagen" (Convertir imágenes, Imágenes a PDF). Al elegir una tarjeta se abre `ToolPanel` dentro de la pestaña.
 - Idioma ES/CA con conmutador en la cabecera, persistido en `localStorage` (`pdf-workshop-lang`), diccionarios en `src/lib/i18n.ts`.
 - Subida binaria con `apiUploadFile` / `downloadBlob` en `src/lib/api.ts`.
 
