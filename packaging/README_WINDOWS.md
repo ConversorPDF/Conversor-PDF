@@ -25,6 +25,7 @@ se instalan una vez en el equipo (o servidor de la red local).
 |---|---|---|
 | **LibreOffice** | Word → PDF (aporta `soffice`) | https://www.libreoffice.org/download/ |
 | **Ghostscript** (64-bit) | Comprimir PDF (aporta `gswin64c`) | https://www.ghostscript.com/releases/gsdnld.html |
+| **FFmpeg** | Audio (convertir / extraer de vídeo) (aporta `ffmpeg`) | https://www.gyan.dev/ffmpeg/builds/ |
 
 El resto de funciones (PDF→Word, unir, dividir, imágenes→PDF) no necesitan nada más.
 
@@ -35,6 +36,7 @@ Si los instalaste en otra ruta, defínelas antes de abrir el `.exe`:
 ```bat
 set SOFFICE_BIN=D:\Apps\LibreOffice\program\soffice.exe
 set GS_BIN=D:\Apps\gs\bin\gswin64c.exe
+set FFMPEG_BIN=D:\Apps\ffmpeg\bin\ffmpeg.exe
 ```
 
 ## 3. Compilar (un solo paso)

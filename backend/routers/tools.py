@@ -36,6 +36,19 @@ def _soffice_bin() -> str:
     return "soffice"  # last resort — subprocess raises a clear error if truly missing
 
 
+def _ffmpeg_bin() -> str:
+    """Locate ffmpeg. Env override wins, then PATH, then common Windows paths."""
+    if override := os.environ.get("FFMPEG_BIN"):
+        return override
+    for name in ("ffmpeg", "ffmpeg.exe"):
+        if found := shutil.which(name):
+            return found
+    for path in (r"C:\Program Files\ffmpeg\bin\ffmpeg.exe", r"C:\ffmpeg\bin\ffmpeg.exe"):
+        if os.path.isfile(path):
+            return path
+    return "ffmpeg"
+
+
 def _gs_bin() -> str:
     """Locate Ghostscript. Env override wins, then PATH (gs/gswin64c/gswin32c), then Windows paths."""
     if override := os.environ.get("GS_BIN"):
@@ -399,6 +412,65 @@ async def convert_image(files: List[UploadFile] = File(...), target: str = Form(
     except HTTPException:
         _cleanup(workdir)
         raise
+    except Exception as exc:  # noqa: BLE001
+        _cleanup(workdir)
+        raise HTTPException(status_code=500, detail=f"Error al convertir: {exc}") from exc
+    return _respond(zip_path, workdir, "application/zip")
+
+
+_AUDIO_INPUTS = (".mp3", ".wav", ".m4a", ".flac", ".aac", ".ogg", ".oga", ".opus", ".wma")
+_VIDEO_INPUTS = (".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v", ".mpeg", ".mpg", ".wmv", ".flv")
+_AUDIO_CODECS: dict[str, list[str]] = {
+    "mp3": ["-c:a", "libmp3lame", "-q:a", "2"],   # high-quality VBR (~190 kbps)
+    "wav": ["-c:a", "pcm_s16le"],                  # uncompressed PCM
+    "flac": ["-c:a", "flac"],                       # lossless
+    "m4a": ["-c:a", "aac", "-b:a", "192k"],
+}
+_AUDIO_MEDIA = {"mp3": "audio/mpeg", "wav": "audio/wav", "flac": "audio/flac", "m4a": "audio/mp4"}
+
+
+@router.post("/convert-audio")
+async def convert_audio(files: List[UploadFile] = File(...), target: str = Form("mp3")):
+    """Convert audio between formats or extract the audio track from a video, via ffmpeg."""
+    if not files:
+        raise HTTPException(status_code=400, detail="Selecciona al menos un archivo")
+    target = target.lower()
+    if target not in _AUDIO_CODECS:
+        raise HTTPException(status_code=400, detail="Formato de destino no soportado")
+    for f in files:
+        _check_ext(f, _AUDIO_INPUTS + _VIDEO_INPUTS)
+    workdir = tempfile.mkdtemp(prefix="audio_")
+    try:
+        outs: list[Path] = []
+        for i, f in enumerate(files):
+            suffix = Path(f.filename or f"in_{i}").suffix
+            src = await _save(f, Path(workdir) / f"in_{i}{suffix}")
+            stem = Path(f.filename or f"audio_{i}").stem
+            out = Path(workdir) / f"{stem}.{target}"
+
+            def _run(src: Path = src, out: Path = out):
+                subprocess.run(
+                    [_ffmpeg_bin(), "-y", "-i", str(src), "-vn", *_AUDIO_CODECS[target], str(out)],
+                    check=True,
+                    capture_output=True,
+                    timeout=600,
+                )
+
+            await asyncio.to_thread(_run)
+            if not out.exists() or out.stat().st_size == 0:
+                raise HTTPException(status_code=500, detail="La conversión no produjo audio")
+            outs.append(out)
+        if len(outs) == 1:
+            return _respond(outs[0], workdir, _AUDIO_MEDIA[target])
+        zip_path = Path(workdir) / f"audio-{target}.zip"
+        _zip_dedup(outs, zip_path)
+    except HTTPException:
+        _cleanup(workdir)
+        raise
+    except subprocess.CalledProcessError as exc:
+        _cleanup(workdir)
+        msg = exc.stderr.decode("utf-8", "ignore")[-300:] if exc.stderr else str(exc)
+        raise HTTPException(status_code=500, detail=f"Error de ffmpeg: {msg}") from exc
     except Exception as exc:  # noqa: BLE001
         _cleanup(workdir)
         raise HTTPException(status_code=500, detail=f"Error al convertir: {exc}") from exc

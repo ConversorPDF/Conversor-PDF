@@ -33,7 +33,7 @@ export interface ToolConfig {
   multiple: boolean;
   minFiles: number;
   field: "file" | "files";
-  category: "documents" | "image";
+  category: "documents" | "image" | "audio";
   ranges?: boolean;
   select?: SelectSpec;
 }

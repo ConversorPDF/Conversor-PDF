@@ -2,11 +2,13 @@ import { useState } from "react";
 import {
   FileText,
   FileType2,
+  FileVolume,
   HardDrive,
   Image as ImageIcon,
   Images,
   Layers,
   Minimize2,
+  Music,
   Scissors,
   ShieldCheck,
   Trash,
@@ -117,6 +119,48 @@ const TOOLS: ToolConfig[] = [
     field: "files",
     category: "image",
   },
+  {
+    id: "convert-audio",
+    endpoint: "/tools/convert-audio",
+    titleKey: "convertAudio",
+    descKey: "convertAudioDesc",
+    accept: ".mp3,.wav,.m4a,.flac,.aac,.ogg",
+    multiple: true,
+    minFiles: 1,
+    field: "files",
+    category: "audio",
+    select: {
+      field: "target",
+      labelKey: "targetLabel",
+      default: "mp3",
+      options: [
+        { value: "mp3", labelKey: "targetMp3" },
+        { value: "wav", labelKey: "targetWav" },
+        { value: "flac", labelKey: "targetFlac" },
+        { value: "m4a", labelKey: "targetM4a" },
+      ],
+    },
+  },
+  {
+    id: "extract-audio",
+    endpoint: "/tools/convert-audio",
+    titleKey: "extractAudio",
+    descKey: "extractAudioDesc",
+    accept: ".mp4,.mov,.mkv,.avi,.webm,.m4v,.mpeg,.mpg,.wmv,.flv",
+    multiple: true,
+    minFiles: 1,
+    field: "files",
+    category: "audio",
+    select: {
+      field: "target",
+      labelKey: "targetLabel",
+      default: "mp3",
+      options: [
+        { value: "mp3", labelKey: "targetMp3" },
+        { value: "wav", labelKey: "targetWav" },
+      ],
+    },
+  },
 ];
 
 const ICONS: Record<string, typeof FileText> = {
@@ -127,17 +171,20 @@ const ICONS: Record<string, typeof FileText> = {
   "images-to-pdf": Images,
   "compress-pdf": Minimize2,
   "convert-image": ImageIcon,
+  "convert-audio": Music,
+  "extract-audio": FileVolume,
 };
 
-const TABS: { id: "documents" | "image"; labelKey: string }[] = [
+const TABS: { id: "documents" | "image" | "audio"; labelKey: string }[] = [
   { id: "documents", labelKey: "tabDocuments" },
   { id: "image", labelKey: "tabImage" },
+  { id: "audio", labelKey: "tabAudio" },
 ];
 
 export default function Home() {
   const [lang, setLangState] = useState<Lang>(() => getLang());
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [tab, setTab] = useState<"documents" | "image">("documents");
+  const [tab, setTab] = useState<"documents" | "image" | "audio">("documents");
   const t = translator(lang);
   const active = TOOLS.find((x) => x.id === activeId) ?? null;
 
@@ -147,7 +194,7 @@ export default function Home() {
   }
 
   function selectTab(next: string) {
-    setTab(next as "documents" | "image");
+    setTab(next as "documents" | "image" | "audio");
     setActiveId(null); // collapse any open panel when switching category
   }
 
