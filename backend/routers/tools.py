@@ -568,3 +568,72 @@ async def merge_audio(
         _cleanup(workdir)
         raise HTTPException(status_code=500, detail=f"Error al unir: {exc}") from exc
     return _respond(out, workdir, _AUDIO_MEDIA[target])
+
+
+_VIDEO_OUT = {
+    "mp4": "video/mp4",
+    "mov": "video/quicktime",
+    "avi": "video/x-msvideo",
+    "mkv": "video/x-matroska",
+}
+_VIDEO_SCALES = {"original", "2160", "1440", "1080", "720", "480", "360"}
+_VIDEO_CRF = {"ligera": "20", "recomendada": "23", "maxima": "28"}
+
+
+@router.post("/convert-video")
+async def convert_video(
+    files: List[UploadFile] = File(...),
+    target: str = Form("mp4"),
+    scale: str = Form("original"),
+    quality: str = Form("recomendada"),
+):
+    """Transcode video between MP4/MOV/AVI/MKV, optionally rescaling height and setting the
+    H.264 CRF (compression). All local via ffmpeg."""
+    if not files:
+        raise HTTPException(status_code=400, detail="Selecciona al menos un archivo")
+    target = target.lower()
+    if target not in _VIDEO_OUT:
+        raise HTTPException(status_code=400, detail="Formato de destino no soportado")
+    if scale not in _VIDEO_SCALES:
+        scale = "original"
+    crf = _VIDEO_CRF.get(quality, "23")
+    for f in files:
+        _check_ext(f, _VIDEO_INPUTS)
+    workdir = tempfile.mkdtemp(prefix="video_")
+    try:
+        outs: list[Path] = []
+        for i, f in enumerate(files):
+            suffix = Path(f.filename or f"in_{i}").suffix
+            src = await _save(f, Path(workdir) / f"in_{i}{suffix}")
+            stem = Path(f.filename or f"video_{i}").stem
+            out = Path(workdir) / f"{stem}.{target}"
+            vf = [] if scale == "original" else ["-vf", f"scale=-2:{scale}"]
+            faststart = ["-movflags", "+faststart"] if target == "mp4" else []
+
+            def _run(src: Path = src, out: Path = out, vf: list[str] = vf, fs: list[str] = faststart):
+                cmd = [
+                    _ffmpeg_bin(), "-y", "-i", str(src), *vf,
+                    "-c:v", "libx264", "-preset", "medium", "-crf", crf,
+                    "-c:a", "aac", "-b:a", "128k", *fs, str(out),
+                ]
+                subprocess.run(cmd, check=True, capture_output=True, timeout=1800)
+
+            await asyncio.to_thread(_run)
+            if not out.exists() or out.stat().st_size == 0:
+                raise HTTPException(status_code=500, detail="La conversión no produjo vídeo")
+            outs.append(out)
+        if len(outs) == 1:
+            return _respond(outs[0], workdir, _VIDEO_OUT[target])
+        zip_path = Path(workdir) / f"video-{target}.zip"
+        _zip_dedup(outs, zip_path)
+    except HTTPException:
+        _cleanup(workdir)
+        raise
+    except subprocess.CalledProcessError as exc:
+        _cleanup(workdir)
+        msg = exc.stderr.decode("utf-8", "ignore")[-300:] if exc.stderr else str(exc)
+        raise HTTPException(status_code=500, detail=f"Error de ffmpeg: {msg}") from exc
+    except Exception as exc:  # noqa: BLE001
+        _cleanup(workdir)
+        raise HTTPException(status_code=500, detail=f"Error al convertir: {exc}") from exc
+    return _respond(zip_path, workdir, "application/zip")

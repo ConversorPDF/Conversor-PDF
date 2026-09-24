@@ -10,9 +10,12 @@ import {
   ListMusic,
   Minimize2,
   Music,
+  Scaling,
   Scissors,
   ShieldCheck,
+  Shrink,
   Trash,
+  Video,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
@@ -192,6 +195,73 @@ const TOOLS: ToolConfig[] = [
     bitrate: true,
     normalize: true,
   },
+  {
+    id: "convert-video",
+    endpoint: "/tools/convert-video",
+    titleKey: "convertVideo",
+    descKey: "convertVideoDesc",
+    accept: ".mp4,.mov,.mkv,.avi,.webm,.m4v,.mpeg,.mpg,.wmv,.flv",
+    multiple: true,
+    minFiles: 1,
+    field: "files",
+    category: "video",
+    select: {
+      field: "target",
+      labelKey: "targetLabel",
+      default: "mp4",
+      options: [
+        { value: "mp4", labelKey: "targetMp4" },
+        { value: "mov", labelKey: "targetMov" },
+        { value: "avi", labelKey: "targetAvi" },
+        { value: "mkv", labelKey: "targetMkv" },
+      ],
+    },
+  },
+  {
+    id: "change-resolution",
+    endpoint: "/tools/convert-video",
+    titleKey: "changeRes",
+    descKey: "changeResDesc",
+    accept: ".mp4,.mov,.mkv,.avi,.webm,.m4v,.mpeg,.mpg,.wmv,.flv",
+    multiple: true,
+    minFiles: 1,
+    field: "files",
+    category: "video",
+    select: {
+      field: "scale",
+      labelKey: "resLabel",
+      default: "1080",
+      options: [
+        { value: "2160", labelKey: "res2160" },
+        { value: "1440", labelKey: "res1440" },
+        { value: "1080", labelKey: "res1080" },
+        { value: "720", labelKey: "res720" },
+        { value: "480", labelKey: "res480" },
+        { value: "360", labelKey: "res360" },
+      ],
+    },
+  },
+  {
+    id: "compress-video",
+    endpoint: "/tools/convert-video",
+    titleKey: "compressVideo",
+    descKey: "compressVideoDesc",
+    accept: ".mp4,.mov,.mkv,.avi,.webm,.m4v,.mpeg,.mpg,.wmv,.flv",
+    multiple: false,
+    minFiles: 1,
+    field: "files",
+    category: "video",
+    select: {
+      field: "quality",
+      labelKey: "levelLabel",
+      default: "recomendada",
+      options: [
+        { value: "ligera", labelKey: "levelLigera" },
+        { value: "recomendada", labelKey: "levelRecomendada" },
+        { value: "maxima", labelKey: "levelMaxima" },
+      ],
+    },
+  },
 ];
 
 const ICONS: Record<string, typeof FileText> = {
@@ -205,18 +275,22 @@ const ICONS: Record<string, typeof FileText> = {
   "convert-audio": Music,
   "extract-audio": FileVolume,
   "merge-audio": ListMusic,
+  "convert-video": Video,
+  "change-resolution": Scaling,
+  "compress-video": Shrink,
 };
 
-const TABS: { id: "documents" | "image" | "audio"; labelKey: string }[] = [
+const TABS: { id: "documents" | "image" | "audio" | "video"; labelKey: string }[] = [
   { id: "documents", labelKey: "tabDocuments" },
   { id: "image", labelKey: "tabImage" },
   { id: "audio", labelKey: "tabAudio" },
+  { id: "video", labelKey: "tabVideo" },
 ];
 
 export default function Home() {
   const [lang, setLangState] = useState<Lang>(() => getLang());
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [tab, setTab] = useState<"documents" | "image" | "audio">("documents");
+  const [tab, setTab] = useState<"documents" | "image" | "audio" | "video">("documents");
   const t = translator(lang);
   const active = TOOLS.find((x) => x.id === activeId) ?? null;
 
@@ -226,7 +300,7 @@ export default function Home() {
   }
 
   function selectTab(next: string) {
-    setTab(next as "documents" | "image" | "audio");
+    setTab(next as "documents" | "image" | "audio" | "video");
     setActiveId(null); // collapse any open panel when switching category
   }
 

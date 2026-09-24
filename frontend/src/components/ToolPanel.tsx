@@ -35,7 +35,7 @@ export interface ToolConfig {
   multiple: boolean;
   minFiles: number;
   field: "file" | "files";
-  category: "documents" | "image" | "audio";
+  category: "documents" | "image" | "audio" | "video";
   ranges?: boolean;
   select?: SelectSpec;
   bitrate?: boolean; // MP3/M4A quality selector (128/192/320)
