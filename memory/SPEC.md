@@ -12,6 +12,7 @@ App web interna tipo iLovePDF. Todo el procesamiento es local (LibreOffice headl
 
 Errores: 400 formato/rango inválido o pocos archivos, 413 >100 MB, 500 fallo de conversión. Cuerpo `{"detail": "..."}`.
 - `/api/tools/convert-audio` — campo `files` (audio .mp3/.wav/.m4a/.flac/.aac/.ogg… o vídeo .mp4/.mov/.mkv/.avi/.webm…) + `target` (mp3|wav|flac|m4a) + opcionales `bitrate` (128|192|320, solo mp3/m4a), `normalize` (bool → loudnorm EBU R128), `start`/`end` (recorte, seg o mm:ss) → audio (1 archivo) o ZIP (2+). Vía ffmpeg (`-vn`, `-ss`/`-to` antes de `-i`). Requiere ffmpeg (FFMPEG_BIN auto-localizado).
+- `/api/tools/merge-audio` — campo `files` (≥2 audio/vídeo) + `target` (mp3|wav|flac|m4a) + opcionales `bitrate`, `normalize` → un único audio continuo (ffmpeg `concat` filter). Requiere ffmpeg.
 - `/api/tools/convert-image` — campo `files` (≥1 .jpg/.jpeg/.png/.bmp/.webp/.tif/.tiff) + `target` (jpg|png) → imagen (1 archivo) o ZIP (2+). PNG sin pérdidas (optimize), JPEG quality=95 subsampling=0 aplanando alfa sobre blanco. Cubre las 8 conversiones (JPG/PNG/BMP/WEBP/TIFF → JPG o PNG).
 
 ## Frontend
@@ -20,6 +21,7 @@ Errores: 400 formato/rango inválido o pocos archivos, 413 >100 MB, 500 fallo de
 - Subida binaria con `apiUploadFile` / `downloadBlob` en `src/lib/api.ts`.
 
 ## Sin autenticación ni cuentas.
+- Recorte con **vista de onda**: `src/components/WaveformTrimmer.tsx` decodifica el audio con Web Audio API (local) y deja arrastrar inicio/fin; para vídeo o si falla la decodificación cae a inputs numéricos. Herramientas Audio: Convertir audio, Extraer audio de vídeo, Unir pistas.
 
 ## Empaquetado como .exe de Windows (packaging/)
 - `backend/desktop.py`: entrypoint que arranca uvicorn en 127.0.0.1 y abre el navegador; FastAPI sirve el SPA pre-construido (bloque estático al final de `server.py`, activo solo si existe `frontend/dist` o `FRONTEND_DIST`).

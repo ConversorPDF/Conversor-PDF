@@ -17,6 +17,7 @@ import { ApiError, apiUploadFile, downloadBlob } from "@/lib/api";
 import type { Lang } from "@/lib/i18n";
 import { translator } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import WaveformTrimmer from "@/components/WaveformTrimmer";
 
 export interface SelectSpec {
   field: string;
@@ -312,29 +313,40 @@ export default function ToolPanel({ tool, lang, onBack }: Props) {
         </div>
       )}
 
-      {tool.trim && (
-        <div className="mt-5 max-w-md">
-          <Label>{t("trimLabel")}</Label>
-          <div className="mt-1.5 flex items-center gap-3">
-            <Input
-              value={start}
-              onChange={(e) => setStart(e.target.value)}
-              placeholder={t("trimStart")}
-              className="font-mono"
-              data-testid="tool-trim-start"
-            />
-            <span className="text-muted-foreground">→</span>
-            <Input
-              value={end}
-              onChange={(e) => setEnd(e.target.value)}
-              placeholder={t("trimEnd")}
-              className="font-mono"
-              data-testid="tool-trim-end"
-            />
+      {tool.trim &&
+        (files.length === 1 ? (
+          <WaveformTrimmer
+            key={`${files[0].name}-${files[0].size}`}
+            file={files[0]}
+            lang={lang}
+            onChange={(s, e) => {
+              setStart(s);
+              setEnd(e);
+            }}
+          />
+        ) : (
+          <div className="mt-5 max-w-md">
+            <Label>{t("trimLabel")}</Label>
+            <div className="mt-1.5 flex items-center gap-3">
+              <Input
+                value={start}
+                onChange={(e) => setStart(e.target.value)}
+                placeholder={t("trimStart")}
+                className="font-mono"
+                data-testid="tool-trim-start"
+              />
+              <span className="text-muted-foreground">→</span>
+              <Input
+                value={end}
+                onChange={(e) => setEnd(e.target.value)}
+                placeholder={t("trimEnd")}
+                className="font-mono"
+                data-testid="tool-trim-end"
+              />
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground">{t("trimHint")}</p>
           </div>
-          <p className="mt-1.5 text-xs text-muted-foreground">{t("trimHint")}</p>
-        </div>
-      )}
+        ))}
 
       {tool.normalize && (
         <label

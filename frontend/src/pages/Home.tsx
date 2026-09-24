@@ -7,6 +7,7 @@ import {
   Image as ImageIcon,
   Images,
   Layers,
+  ListMusic,
   Minimize2,
   Music,
   Scissors,
@@ -167,6 +168,30 @@ const TOOLS: ToolConfig[] = [
     normalize: true,
     trim: true,
   },
+  {
+    id: "merge-audio",
+    endpoint: "/tools/merge-audio",
+    titleKey: "mergeAudio",
+    descKey: "mergeAudioDesc",
+    accept: ".mp3,.wav,.m4a,.flac,.aac,.ogg",
+    multiple: true,
+    minFiles: 2,
+    field: "files",
+    category: "audio",
+    select: {
+      field: "target",
+      labelKey: "targetLabel",
+      default: "mp3",
+      options: [
+        { value: "mp3", labelKey: "targetMp3" },
+        { value: "wav", labelKey: "targetWav" },
+        { value: "flac", labelKey: "targetFlac" },
+        { value: "m4a", labelKey: "targetM4a" },
+      ],
+    },
+    bitrate: true,
+    normalize: true,
+  },
 ];
 
 const ICONS: Record<string, typeof FileText> = {
@@ -179,6 +204,7 @@ const ICONS: Record<string, typeof FileText> = {
   "convert-image": ImageIcon,
   "convert-audio": Music,
   "extract-audio": FileVolume,
+  "merge-audio": ListMusic,
 };
 
 const TABS: { id: "documents" | "image" | "audio"; labelKey: string }[] = [

@@ -509,3 +509,62 @@ async def convert_audio(
         _cleanup(workdir)
         raise HTTPException(status_code=500, detail=f"Error al convertir: {exc}") from exc
     return _respond(zip_path, workdir, "application/zip")
+
+
+@router.post("/merge-audio")
+async def merge_audio(
+    files: List[UploadFile] = File(...),
+    target: str = Form("mp3"),
+    bitrate: str = Form("192"),
+    normalize: str = Form("false"),
+):
+    """Concatenate several audio (or video) inputs into one continuous track via ffmpeg."""
+    if len(files) < 2:
+        raise HTTPException(status_code=400, detail="Selecciona al menos 2 archivos")
+    target = target.lower()
+    if target not in _AUDIO_MEDIA:
+        raise HTTPException(status_code=400, detail="Formato de destino no soportado")
+    if bitrate not in _BITRATES:
+        bitrate = "192"
+    normalize_on = normalize.strip().lower() in ("1", "true", "yes", "on")
+    for f in files:
+        _check_ext(f, _AUDIO_INPUTS + _VIDEO_INPUTS)
+    workdir = tempfile.mkdtemp(prefix="merge_audio_")
+    try:
+        srcs: list[Path] = []
+        for i, f in enumerate(files):
+            suffix = Path(f.filename or f"in_{i}").suffix
+            srcs.append(await _save(f, Path(workdir) / f"in_{i}{suffix}"))
+        out = Path(workdir) / f"pistas-unidas.{target}"
+        n = len(srcs)
+        concat_in = "".join(f"[{i}:a]" for i in range(n))
+        filt = f"{concat_in}concat=n={n}:v=0:a=1[c]"
+        out_label = "[c]"
+        if normalize_on:
+            filt += ";[c]loudnorm=I=-16:TP=-1.5:LRA=11[o]"
+            out_label = "[o]"
+
+        def _run():
+            cmd = [_ffmpeg_bin(), "-y"]
+            for p in srcs:
+                cmd += ["-i", str(p)]
+            cmd += [
+                "-filter_complex", filt, "-map", out_label,
+                *_audio_codec_args(target, bitrate), str(out),
+            ]
+            subprocess.run(cmd, check=True, capture_output=True, timeout=600)
+
+        await asyncio.to_thread(_run)
+        if not out.exists() or out.stat().st_size == 0:
+            raise HTTPException(status_code=500, detail="La unión no produjo audio")
+    except HTTPException:
+        _cleanup(workdir)
+        raise
+    except subprocess.CalledProcessError as exc:
+        _cleanup(workdir)
+        msg = exc.stderr.decode("utf-8", "ignore")[-300:] if exc.stderr else str(exc)
+        raise HTTPException(status_code=500, detail=f"Error de ffmpeg: {msg}") from exc
+    except Exception as exc:  # noqa: BLE001
+        _cleanup(workdir)
+        raise HTTPException(status_code=500, detail=f"Error al unir: {exc}") from exc
+    return _respond(out, workdir, _AUDIO_MEDIA[target])
