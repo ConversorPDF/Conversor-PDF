@@ -13,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ApiError, apiUploadFile, downloadBlob } from "@/lib/api";
+import { ApiError, apiProcessToFile, downloadBlob } from "@/lib/api";
+import { uploadFileChunked } from "@/lib/upload";
 import type { Lang } from "@/lib/i18n";
 import { translator } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -46,12 +47,19 @@ export interface ToolConfig {
 
 const BITRATES = ["128", "192", "320"];
 
-const MAX_BYTES = 100 * 1024 * 1024;
+const MB = 1024 * 1024;
+const CATEGORY_MAX: Record<string, number> = {
+  documents: 150 * MB,
+  image: 500 * MB,
+  audio: 300 * MB,
+  video: 8192 * MB,
+};
 
 function humanSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes < MB) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * MB) return `${(bytes / MB).toFixed(1)} MB`;
+  return `${(bytes / (1024 * MB)).toFixed(1)} GB`;
 }
 
 interface Props {
@@ -62,6 +70,7 @@ interface Props {
 
 export default function ToolPanel({ tool, lang, onBack }: Props) {
   const t = translator(lang);
+  const maxBytes = CATEGORY_MAX[tool.category] ?? 150 * MB;
   const [files, setFiles] = useState<File[]>([]);
   const [ranges, setRanges] = useState("");
   const [selectValue, setSelectValue] = useState(tool.select?.default ?? "");
@@ -81,8 +90,8 @@ export default function ToolPanel({ tool, lang, onBack }: Props) {
     if (!incoming) return;
     const list = Array.from(incoming);
     const ok = list.filter((f) => {
-      if (f.size > MAX_BYTES) {
-        toast.error(`${f.name}: ${t("errTooBig")}`);
+      if (f.size > maxBytes) {
+        toast.error(`${f.name}: ${t("errTooBig")} (${humanSize(maxBytes)})`);
         return false;
       }
       return true;
@@ -102,26 +111,32 @@ export default function ToolPanel({ tool, lang, onBack }: Props) {
       toast.error(tool.minFiles > 1 ? t("errNeedTwo") : t("errNeedFiles"));
       return;
     }
-    const form = new FormData();
-    if (tool.field === "file") form.append("file", files[0]);
-    else files.forEach((f) => form.append("files", f));
-    if (tool.ranges) form.append("ranges", ranges);
-    if (tool.select) form.append(tool.select.field, selectValue);
-    if (tool.bitrate) form.append("bitrate", bitrate);
-    if (tool.normalize) form.append("normalize", normalize ? "true" : "false");
-    if (tool.trim) {
-      form.append("start", start.trim());
-      form.append("end", end.trim());
-    }
-    if (tool.interval) form.append("interval", frameInterval.trim() || "1");
-
     setPhase("uploading");
     setProgress(0);
     try {
-      const result = await apiUploadFile(tool.endpoint, form, (p) => {
-        setProgress(p);
-        if (p >= 100) setPhase("working");
-      });
+      const totalBytes = files.reduce((a, f) => a + f.size, 0) || 1;
+      const ids: string[] = [];
+      let done = 0;
+      for (const f of files) {
+        const id = await uploadFileChunked(f, tool.category, (frac) => {
+          setProgress(Math.round(((done + frac * f.size) / totalBytes) * 100));
+        });
+        done += f.size;
+        setProgress(Math.round((done / totalBytes) * 100));
+        ids.push(id);
+      }
+      setPhase("working");
+      const reqBody: Record<string, unknown> = { upload_ids: ids };
+      if (tool.select) reqBody[tool.select.field] = selectValue;
+      if (tool.ranges) reqBody.ranges = ranges;
+      if (tool.bitrate) reqBody.bitrate = bitrate;
+      if (tool.normalize) reqBody.normalize = normalize;
+      if (tool.trim) {
+        reqBody.start = start.trim();
+        reqBody.end = end.trim();
+      }
+      if (tool.interval) reqBody.interval = frameInterval.trim() || "1";
+      const result = await apiProcessToFile(tool.endpoint, reqBody);
       setPhase("idle");
       setProgress(100);
       downloadBlob(result);

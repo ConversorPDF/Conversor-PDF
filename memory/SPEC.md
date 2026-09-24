@@ -22,6 +22,12 @@ Errores: 400 formato/rango inválido o pocos archivos, 413 >100 MB, 500 fallo de
 - Idioma ES/CA con conmutador en la cabecera, persistido en `localStorage` (`pdf-workshop-lang`), diccionarios en `src/lib/i18n.ts`.
 - Subida binaria con `apiUploadFile` / `downloadBlob` en `src/lib/api.ts`.
 
+## Subida por bloques (chunked) — sin cargar el archivo entero en RAM
+- `PUT /api/tools/upload/{id}/{index}` transmite cada bloque (8 MB) a disco (`request.stream()` → `parts/`); `POST /api/tools/upload/{id}/complete` reensambla por streaming, valida tamaño por categoría y borra los `parts`.
+- Límites por categoría (en `complete`): documents 150 MB, image 500 MB, audio 300 MB, video 8 GB (`CATEGORY_LIMITS`).
+- Los endpoints de herramientas reciben **JSON** `{"upload_ids":[...], ...opciones}` y leen los archivos ya ensamblados desde disco; los temporales (staging + workdir) se borran tras la respuesta o ante error (`BackgroundTask`).
+- Frontend: `src/lib/upload.ts` (`uploadFileChunked`, progreso real por bytes) + `apiProcessToFile` en `src/lib/api.ts`; `ToolPanel` sube por bloques y luego procesa.
+
 ## Sin autenticación ni cuentas.
 - Recorte con **vista de onda**: `src/components/WaveformTrimmer.tsx` decodifica el audio con Web Audio API (local) y deja arrastrar inicio/fin; para vídeo o si falla la decodificación cae a inputs numéricos. Herramientas Audio: Convertir audio, Extraer audio de vídeo, Unir pistas.
 

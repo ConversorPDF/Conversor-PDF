@@ -100,6 +100,28 @@ export function apiUploadFile(
   });
 }
 
+// POST a JSON body and receive a binary file (the processing step, after chunked upload).
+export async function apiProcessToFile(path: string, body: unknown): Promise<FileResult> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new ApiError(res.status, err);
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition") ?? "";
+  const match = /filename="?([^";]+)"?/.exec(disposition);
+  const reductionRaw = res.headers.get("X-Reduction-Percent");
+  return {
+    blob,
+    filename: match ? match[1] : "resultado",
+    reductionPercent: reductionRaw === null ? undefined : Number(reductionRaw),
+  };
+}
+
 export function downloadBlob(result: FileResult) {
   const url = URL.createObjectURL(result.blob);
   const a = document.createElement("a");
