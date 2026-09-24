@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Clapperboard,
   FileText,
   FileType2,
   FileVolume,
@@ -262,6 +263,50 @@ const TOOLS: ToolConfig[] = [
       ],
     },
   },
+  {
+    id: "trim-video",
+    endpoint: "/tools/convert-video",
+    titleKey: "trimVideo",
+    descKey: "trimVideoDesc",
+    accept: ".mp4,.mov,.mkv,.avi,.webm,.m4v,.mpeg,.mpg,.wmv,.flv",
+    multiple: true,
+    minFiles: 1,
+    field: "files",
+    category: "video",
+    select: {
+      field: "target",
+      labelKey: "targetLabel",
+      default: "mp4",
+      options: [
+        { value: "mp4", labelKey: "targetMp4" },
+        { value: "mov", labelKey: "targetMov" },
+        { value: "avi", labelKey: "targetAvi" },
+        { value: "mkv", labelKey: "targetMkv" },
+      ],
+    },
+    trim: true,
+  },
+  {
+    id: "extract-frames",
+    endpoint: "/tools/extract-frames",
+    titleKey: "extractFrames",
+    descKey: "extractFramesDesc",
+    accept: ".mp4,.mov,.mkv,.avi,.webm,.m4v,.mpeg,.mpg,.wmv,.flv",
+    multiple: false,
+    minFiles: 1,
+    field: "file",
+    category: "video",
+    select: {
+      field: "fmt",
+      labelKey: "targetLabel",
+      default: "jpg",
+      options: [
+        { value: "jpg", labelKey: "targetJpg" },
+        { value: "png", labelKey: "targetPng" },
+      ],
+    },
+    interval: true,
+  },
 ];
 
 const ICONS: Record<string, typeof FileText> = {
@@ -278,6 +323,8 @@ const ICONS: Record<string, typeof FileText> = {
   "convert-video": Video,
   "change-resolution": Scaling,
   "compress-video": Shrink,
+  "trim-video": Scissors,
+  "extract-frames": Clapperboard,
 };
 
 const TABS: { id: "documents" | "image" | "audio" | "video"; labelKey: string }[] = [

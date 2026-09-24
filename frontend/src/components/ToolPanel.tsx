@@ -41,6 +41,7 @@ export interface ToolConfig {
   bitrate?: boolean; // MP3/M4A quality selector (128/192/320)
   normalize?: boolean; // even-out loudness across tracks
   trim?: boolean; // start/end cut
+  interval?: boolean; // frame-extract interval (seconds)
 }
 
 const BITRATES = ["128", "192", "320"];
@@ -68,6 +69,7 @@ export default function ToolPanel({ tool, lang, onBack }: Props) {
   const [normalize, setNormalize] = useState(false);
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
+  const [frameInterval, setFrameInterval] = useState("1");
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<"idle" | "uploading" | "working">("idle");
@@ -111,6 +113,7 @@ export default function ToolPanel({ tool, lang, onBack }: Props) {
       form.append("start", start.trim());
       form.append("end", end.trim());
     }
+    if (tool.interval) form.append("interval", frameInterval.trim() || "1");
 
     setPhase("uploading");
     setProgress(0);
@@ -310,6 +313,21 @@ export default function ToolPanel({ tool, lang, onBack }: Props) {
               ))}
             </SelectContent>
           </Select>
+        </div>
+      )}
+
+      {tool.interval && (
+        <div className="mt-5 max-w-md">
+          <Label htmlFor="interval-input">{t("intervalLabel")}</Label>
+          <Input
+            id="interval-input"
+            value={frameInterval}
+            onChange={(e) => setFrameInterval(e.target.value)}
+            placeholder="1"
+            className="mt-1.5 font-mono"
+            data-testid="tool-interval-input"
+          />
+          <p className="mt-1.5 text-xs text-muted-foreground">{t("intervalHint")}</p>
         </div>
       )}
 

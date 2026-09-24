@@ -586,6 +586,8 @@ async def convert_video(
     target: str = Form("mp4"),
     scale: str = Form("original"),
     quality: str = Form("recomendada"),
+    start: str = Form(""),
+    end: str = Form(""),
 ):
     """Transcode video between MP4/MOV/AVI/MKV, optionally rescaling height and setting the
     H.264 CRF (compression). All local via ffmpeg."""
@@ -597,6 +599,15 @@ async def convert_video(
     if scale not in _VIDEO_SCALES:
         scale = "original"
     crf = _VIDEO_CRF.get(quality, "23")
+    start, end = start.strip(), end.strip()
+    for label, value in (("inicio", start), ("fin", end)):
+        if value and not _TIME_RE.match(value):
+            raise HTTPException(status_code=400, detail=f"Tiempo de {label} no válido: {value}")
+    seek: list[str] = []
+    if start:
+        seek += ["-ss", start]
+    if end:
+        seek += ["-to", end]
     for f in files:
         _check_ext(f, _VIDEO_INPUTS)
     workdir = tempfile.mkdtemp(prefix="video_")
@@ -612,7 +623,7 @@ async def convert_video(
 
             def _run(src: Path = src, out: Path = out, vf: list[str] = vf, fs: list[str] = faststart):
                 cmd = [
-                    _ffmpeg_bin(), "-y", "-i", str(src), *vf,
+                    _ffmpeg_bin(), "-y", *seek, "-i", str(src), *vf,
                     "-c:v", "libx264", "-preset", "medium", "-crf", crf,
                     "-c:a", "aac", "-b:a", "128k", *fs, str(out),
                 ]
@@ -636,4 +647,58 @@ async def convert_video(
     except Exception as exc:  # noqa: BLE001
         _cleanup(workdir)
         raise HTTPException(status_code=500, detail=f"Error al convertir: {exc}") from exc
+    return _respond(zip_path, workdir, "application/zip")
+
+
+@router.post("/extract-frames")
+async def extract_frames(
+    file: UploadFile = File(...),
+    interval: str = Form("1"),
+    fmt: str = Form("jpg"),
+):
+    """Save one frame every N seconds from a video as JPG/PNG, returned as a ZIP."""
+    _check_ext(file, _VIDEO_INPUTS)
+    fmt = fmt.lower()
+    if fmt not in ("jpg", "jpeg", "png"):
+        raise HTTPException(status_code=400, detail="Formato de imagen no soportado")
+    ext = "png" if fmt == "png" else "jpg"
+    try:
+        step = float(interval.replace(",", "."))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Intervalo no válido") from exc
+    if step <= 0:
+        raise HTTPException(status_code=400, detail="El intervalo debe ser mayor que 0")
+    step = max(step, 0.1)
+    workdir = tempfile.mkdtemp(prefix="frames_")
+    try:
+        suffix = Path(file.filename or "video.mp4").suffix
+        src = await _save(file, Path(workdir) / f"in{suffix}")
+        framedir = Path(workdir) / "frames"
+        framedir.mkdir()
+        stem = Path(file.filename or "video").stem
+        pattern = str(framedir / f"{stem}_%04d.{ext}")
+
+        def _run():
+            cmd = [_ffmpeg_bin(), "-y", "-i", str(src), "-vf", f"fps=1/{step}"]
+            if ext == "jpg":
+                cmd += ["-q:v", "2"]
+            cmd += [pattern]
+            subprocess.run(cmd, check=True, capture_output=True, timeout=1200)
+
+        await asyncio.to_thread(_run)
+        frames = sorted(framedir.glob(f"*.{ext}"))
+        if not frames:
+            raise HTTPException(status_code=500, detail="No se extrajeron fotogramas")
+        zip_path = Path(workdir) / f"fotogramas-{ext}.zip"
+        _zip_dedup(frames, zip_path)
+    except HTTPException:
+        _cleanup(workdir)
+        raise
+    except subprocess.CalledProcessError as exc:
+        _cleanup(workdir)
+        msg = exc.stderr.decode("utf-8", "ignore")[-300:] if exc.stderr else str(exc)
+        raise HTTPException(status_code=500, detail=f"Error de ffmpeg: {msg}") from exc
+    except Exception as exc:  # noqa: BLE001
+        _cleanup(workdir)
+        raise HTTPException(status_code=500, detail=f"Error al extraer: {exc}") from exc
     return _respond(zip_path, workdir, "application/zip")
